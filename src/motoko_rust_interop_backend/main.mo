@@ -27,19 +27,17 @@ actor Main {
         throw Error.reject("No bucket canisterId to delete");
       };
       case (?cId) {
-        // TODO: transfer cycles before delete
-        
-        // let deckBucket = actor (Principal.toText(cId)) : actor {
-        //  transferCycles : () -> async ();
-        // };
+        let bucket = actor (Principal.toText(cId)) : actor {
+          transfer_cycles : () -> async ();
+        };
 
-        // await deckBucket.transferCycles();
+        await bucket.transfer_cycles();
 
-        await ic.stop_canister({ canister_id = cId });
+        // await ic.stop_canister({ canister_id = cId });
 
-        await ic.delete_canister({ canister_id = cId });
+        // await ic.delete_canister({ canister_id = cId });
 
-        canisterId := null;
+        // canisterId := null;
 
         return cId;
       };

@@ -21,19 +21,52 @@ async fn create_bucket(user_id: ic_cdk::export::Principal) -> ic_cdk::export::Pr
         }),
     };
 
-    let canister_id = create_canister(arg).await.unwrap().0.canister_id;
+    create_canister(arg).await.unwrap();
+
+    let canister_id = create_canister_with_extra_cycles(
+        CreateCanisterArgument::default(),
+        1_000_000_000_000u128
+    ).await.unwrap().0.canister_id;
 
     let arg = UpdateSettingsArgument {
         canister_id,
         settings: CanisterSettings {
-            controllers: Some(vec![canister_id, caller, user_id]),
+            controllers: Some(vec![canister_id, ic_cdk::id(), caller, user_id]),
             compute_allocation: None,
             memory_allocation: None,
             freezing_threshold: None,
         },
-    };    
+    };
 
     update_settings(arg).await.unwrap();
 
+    // TODO: load this wasm
+    let arg = InstallCodeArgument {
+        mode: CanisterInstallMode::Install,
+        canister_id,
+        // A minimal valid wasm module
+        // wat2wasm "(module)"
+        wasm_module: b"\x00asm\x01\x00\x00\x00".to_vec(),
+        arg: vec![],
+    };
+    install_code(arg).await.unwrap();
+
     return canister_id;
+}
+
+#[ic_cdk_macros::update]
+async fn transfer_cycles() {
+    // TODO: is caller === manager
+
+    let _caller = api::caller();
+
+    let arg = CanisterIdRecord { canister_id: ic_cdk::id() };
+
+    let response = canister_status(arg).await.unwrap().0;
+
+    ic_cdk::print(format!("{}", response.cycles));
+
+    // freezing_threshold_cycles
+
+    // deposit_cycles(arg, 1_000_000_000_000u128).await.unwrap();
 }
