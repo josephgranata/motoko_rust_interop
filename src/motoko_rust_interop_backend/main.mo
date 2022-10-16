@@ -33,11 +33,11 @@ actor Main {
 
         await bucket.transfer_cycles();
 
-        // await ic.stop_canister({ canister_id = cId });
+        await ic.stop_canister({ canister_id = cId });
 
-        // await ic.delete_canister({ canister_id = cId });
+        await ic.delete_canister({ canister_id = cId });
 
-        // canisterId := null;
+        canisterId := null;
 
         return cId;
       };

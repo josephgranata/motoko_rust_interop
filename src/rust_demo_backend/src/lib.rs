@@ -1,5 +1,6 @@
 use ic_cdk::api::management_canister::main::*;
 use ic_cdk::{ api };
+use candid::{Nat};
 
 #[ic_cdk_macros::query]
 fn greet(name: String) -> String {
@@ -8,26 +9,23 @@ fn greet(name: String) -> String {
 
 // https://github.com/dfinity/cdk-rs/tree/main/examples/management_canister
 
-pub const WASM: &[u8] =
-    include_bytes!("../../../target/wasm32-unknown-unknown/release/rust_demo_backend.wasm");
+pub const WASM: &[u8] = include_bytes!(
+    "../../../target/wasm32-unknown-unknown/release/rust_demo_backend.wasm"
+);
 
 #[ic_cdk_macros::update]
 async fn create_bucket(user_id: ic_cdk::export::Principal) -> ic_cdk::export::Principal {
     let caller = api::caller();
 
-    let arg = CreateCanisterArgument {
-        settings: Some(CanisterSettings {
-            controllers: Some(vec![ic_cdk::id()]),
-            compute_allocation: None,
-            memory_allocation: None,
-            freezing_threshold: None,
-        }),
-    };
-
-    create_canister(arg).await.unwrap();
-
     let canister_id = create_canister_with_extra_cycles(
-        CreateCanisterArgument::default(),
+        CreateCanisterArgument {
+            settings: Some(CanisterSettings {
+                controllers: Some(vec![ic_cdk::id()]),
+                compute_allocation: None,
+                memory_allocation: None,
+                freezing_threshold: None,
+            }),
+        },
         1_000_000_000_000u128
     ).await.unwrap().0.canister_id;
 
@@ -48,6 +46,7 @@ async fn create_bucket(user_id: ic_cdk::export::Principal) -> ic_cdk::export::Pr
         mode: CanisterInstallMode::Install,
         canister_id,
         wasm_module: WASM.into(),
+        // wasm_module: b"\x00asm\x01\x00\x00\x00".to_vec(),
         arg: vec![],
     };
     install_code(arg).await.unwrap();
@@ -65,9 +64,12 @@ async fn transfer_cycles() {
 
     let response = canister_status(arg).await.unwrap().0;
 
-    ic_cdk::print(format!("{}", response.cycles));
+    let cycles: Nat = response.cycles - Nat::from(100_000_000_000u128);
 
-    // freezing_threshold_cycles
+    ic_cdk::print(format!("{}", cycles));
 
-    // deposit_cycles(arg, 1_000_000_000_000u128).await.unwrap();
+        // TODO: convert candid:Nat to u128
+    // if cycles > 0 {
+        deposit_cycles(arg, 500_000_000_000u128).await.unwrap();
+    // }
 }
