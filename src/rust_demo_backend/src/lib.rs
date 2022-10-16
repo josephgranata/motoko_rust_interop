@@ -15,7 +15,7 @@ async fn create_bucket(user_id: ic_cdk::export::Principal) -> ic_cdk::export::Pr
 
     let arg = CreateCanisterArgument {
         settings: Some(CanisterSettings {
-            controllers: Some(vec![ic_cdk::id(), caller, user_id]),
+            controllers: Some(vec![ic_cdk::id()]),
             compute_allocation: None,
             memory_allocation: None,
             freezing_threshold: None,
@@ -31,6 +31,8 @@ async fn create_bucket(user_id: ic_cdk::export::Principal) -> ic_cdk::export::Pr
     .unwrap()
     .0
     .canister_id;
+
+    // TODO: update settings with caller and user_id caller, user_id
 
     return canister_id;
 }
