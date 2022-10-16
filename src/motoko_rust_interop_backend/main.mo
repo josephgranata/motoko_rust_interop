@@ -13,8 +13,12 @@ actor Main {
   private stable var canisterId : ?Principal = null;
 
   public shared ({ caller }) func init() : async (Principal) {
-    let canisterId = await RustDemoBackend.create_bucket(caller);
-    return canisterId;
+    let newCanisterId = await RustDemoBackend.create_bucket(caller);
+
+    // Demo purpose, I keep just track of last canister I created
+    canisterId := ?newCanisterId;
+
+    return newCanisterId;
   };
 
   public shared ({ caller }) func delete() : async (Principal) {
