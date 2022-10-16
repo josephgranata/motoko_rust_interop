@@ -8,6 +8,9 @@ fn greet(name: String) -> String {
 
 // https://github.com/dfinity/cdk-rs/tree/main/examples/management_canister
 
+pub const WASM: &[u8] =
+    include_bytes!("../../../target/wasm32-unknown-unknown/release/rust_demo_backend.wasm");
+
 #[ic_cdk_macros::update]
 async fn create_bucket(user_id: ic_cdk::export::Principal) -> ic_cdk::export::Principal {
     let caller = api::caller();
@@ -40,13 +43,11 @@ async fn create_bucket(user_id: ic_cdk::export::Principal) -> ic_cdk::export::Pr
 
     update_settings(arg).await.unwrap();
 
-    // TODO: load this wasm
+    // Install code of this canister
     let arg = InstallCodeArgument {
         mode: CanisterInstallMode::Install,
         canister_id,
-        // A minimal valid wasm module
-        // wat2wasm "(module)"
-        wasm_module: b"\x00asm\x01\x00\x00\x00".to_vec(),
+        wasm_module: WASM.into(),
         arg: vec![],
     };
     install_code(arg).await.unwrap();
