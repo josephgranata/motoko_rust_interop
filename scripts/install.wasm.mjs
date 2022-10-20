@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import {IDL} from '@dfinity/candid';
+import {AnonymousIdentity} from "@dfinity/agent";
 import { readFile } from "fs/promises";
 import {canisterId, managerActor} from "./actor.mjs";
 
@@ -36,8 +38,23 @@ const installWasm = async (wasmModule) => {
   console.log(`Done: ${canisterId}`);
 };
 
+// TODO: just noticed that I am lucky enough the wasm never been to big
+const upgradeWasm = async (wasmModule) => {
+  console.log(`Upgrading wasm code.`);
+
+  const arg = IDL.encode([IDL.Principal], [new AnonymousIdentity().getPrincipal()]);
+  const result = await managerActor.installCode(arg, wasmModule);
+
+  console.log(`Upgraded: ${result.toText()}`);
+};
+
 (async () => {
   const wasmModule = await loadWasm("rust_demo_backend");
+
+  // Install wasm in manager
   await resetWasm();
   await installWasm(wasmModule);
+
+  // Reinstall code
+  await upgradeWasm(wasmModule);
 })();

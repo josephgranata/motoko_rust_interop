@@ -53,6 +53,8 @@ actor Main {
 
     let { canister_id } = await ic.create_canister({ settings = null });
 
+    canisterId := ?canister_id;
+
     let self : Principal = Principal.fromActor(Main);
 
     let controllers : ?[Principal] = ?[canister_id, caller, self];
@@ -91,6 +93,8 @@ actor Main {
           transfer_cycles : () -> async ();
         };
 
+        // TODO: validate transfer cycles
+
         await bucket.transfer_cycles();
 
         await ic.stop_canister({ canister_id = cId });
@@ -104,15 +108,26 @@ actor Main {
     };
   };
 
-  // TODO: validate transfer cycles
+  /**
+   * Test features here under - Stick to Papyrs current implementation
+   */
 
-  public shared ({ caller }) func installCode(canisterId : Principal, arg : Blob, wasmModule : Blob) : async () {
-    await ic.install_code({
-      arg = arg;
-      wasm_module = wasmModule;
-      mode = #upgrade;
-      canister_id = canisterId;
-    });
+  public shared ({ caller }) func installCode(arg : Blob, wasmModule : Blob) : async (Principal) {
+    switch (canisterId) {
+      case null {
+        throw Error.reject("No bucket canisterId to install");
+      };
+      case (?cId) {
+        await ic.install_code({
+          arg = arg;
+          wasm_module = wasmModule;
+          mode = #upgrade;
+          canister_id = cId;
+        });
+
+        return cId;
+      };
+    };
   };
 
 };
