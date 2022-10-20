@@ -44,6 +44,8 @@ actor Main {
     };
   };
 
+  // TODO: validate transfer cycles
+
   public shared ({ caller }) func installCode(canisterId : Principal, arg : Blob, wasmModule : Blob) : async () {
     await ic.install_code({
       arg = arg;
