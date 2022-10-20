@@ -11,6 +11,8 @@ thread_local! {
     static STATE: RefCell<State> = RefCell::default();
 }
 
+// TODO: https://forum.dfinity.org/t/init-arg-mandatory-in-state/16009/ ?
+
 #[derive(Default)]
 struct State {
     owner: Option<Principal>,
