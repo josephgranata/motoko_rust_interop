@@ -1,5 +1,6 @@
 export const idlFactory = ({ IDL }) => {
   return IDL.Service({
+    'cyclesBalance' : IDL.Func([], [IDL.Nat], ['query']),
     'delete' : IDL.Func([], [IDL.Principal], []),
     'init' : IDL.Func([], [IDL.Principal], []),
     'installCode' : IDL.Func(

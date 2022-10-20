@@ -83,6 +83,10 @@ actor Main {
     return canister_id;
   };
 
+  /**
+   * Features here under - Stick to Papyrs current implementation
+   */
+
   public shared ({ caller }) func delete() : async (Principal) {
     switch (canisterId) {
       case null {
@@ -92,8 +96,6 @@ actor Main {
         let bucket = actor (Principal.toText(cId)) : actor {
           transfer_cycles : () -> async ();
         };
-
-        // TODO: validate transfer cycles
 
         await bucket.transfer_cycles();
 
@@ -107,10 +109,6 @@ actor Main {
       };
     };
   };
-
-  /**
-   * Test features here under - Stick to Papyrs current implementation
-   */
 
   public shared ({ caller }) func installCode(arg : Blob, wasmModule : Blob) : async (Principal) {
     switch (canisterId) {
@@ -128,6 +126,10 @@ actor Main {
         return cId;
       };
     };
+  };
+
+  public shared query ({caller}) func cyclesBalance() : async (Nat) {
+    Cycles.balance();
   };
 
 };

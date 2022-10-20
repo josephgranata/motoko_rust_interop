@@ -1,4 +1,5 @@
 service : {
+  cyclesBalance: () -> (nat) query;
   delete: () -> (principal);
   init: () -> (principal);
   installCode: (blob, blob) -> (principal);

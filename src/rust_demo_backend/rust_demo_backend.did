@@ -1,5 +1,4 @@
 service : {
     "greet": (text) -> (text) query;
-    "create_bucket": (principal) -> (principal);
     "transfer_cycles": () -> ();
 }

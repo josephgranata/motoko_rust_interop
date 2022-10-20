@@ -1,5 +1,5 @@
 use ic_cdk::api::management_canister::main::{ canister_status, CanisterIdRecord, deposit_cycles };
-use ic_cdk::{ api, storage };
+use ic_cdk::{ api, storage, print };
 use candid::{ Nat, Principal };
 use ic_cdk_macros::{ init, query, update, pre_upgrade, post_upgrade };
 use std::cell::RefCell;
@@ -21,7 +21,7 @@ struct State {
 
 #[init]
 fn init(user: Principal) {
-    ic_cdk::print(format!("Initializing bucket., {}", user.to_text()));
+    print(format!("Initializing bucket., {}", user.to_text()));
     STATE.with(|state| {
         *state.borrow_mut() = State {
             owner: Some(user),
@@ -57,20 +57,23 @@ fn get_owner(state: &State) -> Option<Principal> {
 
 #[update]
 async fn transfer_cycles() {
+    let caller = api::caller();
+
+    // TODO: determine effective threshold - get freezing_threshold_in_cycles via ic.canister_status()
+    // use freezing_threshold_in_cycles - https://github.com/dfinity/interface-spec/pull/18/files
+    // https://forum.dfinity.org/t/minimal-cycles-to-delete-canister/15926
+
     // TODO: is caller === manager
 
-    let _caller = api::caller();
-
     let arg = CanisterIdRecord { canister_id: ic_cdk::id() };
-
     let response = canister_status(arg).await.unwrap().0;
-
     let cycles: Nat = response.cycles - Nat::from(100_000_000_000u128);
 
-    ic_cdk::print(format!("{}", cycles));
+    print(format!("Current cycles {}", cycles));
 
-    // TODO: convert candid:Nat to u128
-    // if cycles > 0 {
-    deposit_cycles(arg, 500_000_000_000u128).await.unwrap();
-    // }
+    if cycles > Nat::from(0) {
+        let arg_deposit = CanisterIdRecord { canister_id: caller };
+        // TODO: issue https://forum.dfinity.org/t/candid-nat-to-u128/16016
+        deposit_cycles(arg_deposit, 800_000_000_000u128).await.unwrap();
+    }
 }

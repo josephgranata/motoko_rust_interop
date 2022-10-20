@@ -24,6 +24,15 @@ const deleteCanister = async () => {
   }
 }
 
+const balanceCanister = async () => {
+  try {
+    const balance = await motoko_rust_interop_backend.cyclesBalance();
+    console.log('Balance', balance);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 const greet = async () => {
   try {
     const actor = createActor(canisterId);
@@ -40,6 +49,9 @@ const init = () => {
 
   const btnDelete = document.querySelector("button#delete");
   btnDelete.addEventListener("click", deleteCanister);
+
+  const btnBalance = document.querySelector("button#balance");
+  btnBalance.addEventListener("click", balanceCanister);
 
   const btnGreet = document.querySelector("button#greet");
   btnGreet.addEventListener("click", greet);
