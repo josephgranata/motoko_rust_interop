@@ -20,7 +20,7 @@ actor Main {
   // https://github.com/ORIGYN-SA/large_canister_deployer_internal
   // https://forum.dfinity.org/t/read-local-file-at-build-time-with-motoko/15945/2
 
-  public shared ({ caller }) func storateResetWasm(blob: [Nat8]): async () {
+  public shared ({ caller }) func storateResetWasm(): async () {
       // TODO: reject invalid caller
       storageWasm := [];
   };
@@ -68,9 +68,11 @@ actor Main {
       };
     }));
 
-    // TODO: arg = user
+    // TODO: replace caller with effective userId
+    let arg: Blob = to_candid(caller);
+
     await ic.install_code({
-      arg = Blob.fromArray([]);
+      arg;
       wasm_module = Blob.fromArray(storageWasm);
       mode = #install;
       canister_id;

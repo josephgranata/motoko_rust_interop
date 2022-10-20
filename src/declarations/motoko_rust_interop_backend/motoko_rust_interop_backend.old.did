@@ -6,6 +6,6 @@ service : {
                                     chunks: nat;
                                     total: nat;
                                   });
-  storateResetWasm: (vec nat8) -> ();
+  storateResetWasm: () -> ();
   wasmHash: () -> (blob);
 }

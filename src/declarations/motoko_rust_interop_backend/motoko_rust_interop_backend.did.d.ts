@@ -12,6 +12,6 @@ export interface _SERVICE {
     [Array<number>],
     { 'total' : bigint, 'chunks' : bigint },
   >,
-  'storateResetWasm' : ActorMethod<[Array<number>], undefined>,
+  'storateResetWasm' : ActorMethod<[], undefined>,
   'wasmHash' : ActorMethod<[], Array<number>>,
 }

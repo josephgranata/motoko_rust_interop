@@ -1,13 +1,19 @@
-use ic_cdk::api::management_canister::main::*;
+use ic_cdk::api::management_canister::main::{ canister_status, CanisterIdRecord, deposit_cycles };
 use ic_cdk::{ api };
-use candid::{Nat};
+use candid::{ Nat, Principal };
+use ic_cdk_macros::{ init, query, update };
 
-#[ic_cdk_macros::query]
-fn greet(name: String) -> String {
-    format!("Hello super, {}!", name)
+#[init]
+fn init(user: Principal) {
+    ic_cdk::print(format!("Initializing bucket., {}", user.to_text()));
 }
 
-#[ic_cdk_macros::update]
+#[query]
+fn greet(name: String) -> String {
+    format!("Hello super super, {}!", name)
+}
+
+#[update]
 async fn transfer_cycles() {
     // TODO: is caller === manager
 
@@ -21,8 +27,8 @@ async fn transfer_cycles() {
 
     ic_cdk::print(format!("{}", cycles));
 
-        // TODO: convert candid:Nat to u128
+    // TODO: convert candid:Nat to u128
     // if cycles > 0 {
-        deposit_cycles(arg, 500_000_000_000u128).await.unwrap();
+    deposit_cycles(arg, 500_000_000_000u128).await.unwrap();
     // }
 }

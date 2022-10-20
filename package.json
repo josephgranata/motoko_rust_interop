@@ -9,12 +9,14 @@
     "Canister"
   ],
   "scripts": {
+    "topup": "dfx wallet send rrkah-fqaaa-aaaaa-aaaaq-cai 20000000000000",
     "wasm": "node scripts/install.wasm.mjs",
     "build": "webpack",
-    "prebuild": "npm run copy:types",
+    "prebuild": "npm run copy:types && npm run copy:mjs",
     "start": "webpack serve --mode development --env development",
-    "prestart": "npm run copy:types",
-    "copy:types": "rsync -avr .dfx/$(echo ${DFX_NETWORK:-'**'})/canisters/** --exclude='assets/' --exclude='idl/' --exclude='*.wasm' --exclude='*.most' --delete src/declarations"
+    "prestart": "npm run copy:types && npm run copy:mjs",
+    "copy:types": "rsync -avr .dfx/$(echo ${DFX_NETWORK:-'**'})/canisters/** --exclude='assets/' --exclude='idl/' --exclude='*.wasm' --exclude='*.most' --delete src/declarations",
+    "copy:mjs": "cp src/declarations/motoko_rust_interop_backend/motoko_rust_interop_backend.did.js src/declarations/motoko_rust_interop_backend/motoko_rust_interop_backend.did.mjs"
   },
   "devDependencies": {
     "@dfinity/agent": "0.14.0",

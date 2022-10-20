@@ -10,6 +10,10 @@ const loadWasm = async (type) => {
   return [...new Uint8Array(buffer)];
 };
 
+const resetWasm = async () => {
+  await managerActor.storateResetWasm();
+}
+
 const installWasm = async (wasmModule) => {
   console.log(`Installing wasm code in: ${canisterId}`);
 
@@ -34,5 +38,6 @@ const installWasm = async (wasmModule) => {
 
 (async () => {
   const wasmModule = await loadWasm("rust_demo_backend");
+  await resetWasm();
   await installWasm(wasmModule);
 })();
