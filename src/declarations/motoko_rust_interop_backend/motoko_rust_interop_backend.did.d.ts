@@ -8,4 +8,10 @@ export interface _SERVICE {
     [Principal, Array<number>, Array<number>],
     undefined,
   >,
+  'storageLoadWasm' : ActorMethod<
+    [Array<number>],
+    { 'total' : bigint, 'chunks' : bigint },
+  >,
+  'storateResetWasm' : ActorMethod<[Array<number>], undefined>,
+  'wasmHash' : ActorMethod<[], Array<number>>,
 }

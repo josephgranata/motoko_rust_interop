@@ -1,10 +1,12 @@
 import Cycles "mo:base/ExperimentalCycles";
 import Principal "mo:base/Principal";
 import Error "mo:base/Error";
+import Blob "mo:base/Blob";
+import Buffer "mo:base/Buffer";
+import Array "mo:base/Array";
+import Prelude "mo:base/Prelude";
 
 import IC "./ic.types";
-
-import RustDemoBackend "canister:rust_demo_backend";
 
 actor Main {
 
@@ -12,13 +14,69 @@ actor Main {
 
   private stable var canisterId : ?Principal = null;
 
+  private stable var storageWasm: [Nat8] = [];
+
+  // Source:
+  // https://github.com/ORIGYN-SA/large_canister_deployer_internal
+  // https://forum.dfinity.org/t/read-local-file-at-build-time-with-motoko/15945/2
+
+  public shared ({ caller }) func storateResetWasm(blob: [Nat8]): async () {
+      // TODO: reject invalid caller
+      storageWasm := [];
+  };
+
+  public shared ({ caller }) func storageLoadWasm(blob: [Nat8]): async ({total: Nat; chunks: Nat;}) {
+      // TODO: reject invalid caller
+
+      // Issue: https://forum.dfinity.org/t/array-to-buffer-in-motoko/15880/15
+      // let buffer: Buffer.Buffer<Nat8> = Buffer.fromArray<Nat8>(storageWasm);
+      // let chunks: Buffer.Buffer<Nat8> = Buffer.fromArray<Nat8>(blob);
+      // buffer.append(chunks);
+      // storageWasm := buffer.toArray();
+
+      storageWasm := Array.append<Nat8>(storageWasm, blob);
+
+      // return total wasm sizes
+      return {
+          total = storageWasm.size();
+          chunks = blob.size();
+      }
+  };
+
+  public func wasmHash(): async (Blob) {
+      // return hash of the wasm
+      Prelude.nyi()
+  };
+
   public shared ({ caller }) func init() : async (Principal) {
-    let newCanisterId = await RustDemoBackend.create_bucket(caller);
+    Cycles.add(1_000_000_000_000);
 
-    // Demo purpose, I keep just track of last canister I created
-    canisterId := ?newCanisterId;
+    let { canister_id } = await ic.create_canister({ settings = null });
 
-    return newCanisterId;
+    let self : Principal = Principal.fromActor(Main);
+
+    let controllers : ?[Principal] = ?[canister_id, caller, self];
+
+    // TODO: can this step be spared?
+    await ic.update_settings(({
+      canister_id;
+      settings = {
+        controllers = controllers;
+        freezing_threshold = null;
+        memory_allocation = null;
+        compute_allocation = null;
+      };
+    }));
+
+    // TODO: arg = user
+    await ic.install_code({
+      arg = Blob.fromArray([]);
+      wasm_module = Blob.fromArray(storageWasm);
+      mode = #install;
+      canister_id;
+    });
+
+    return canister_id;
   };
 
   public shared ({ caller }) func delete() : async (Principal) {

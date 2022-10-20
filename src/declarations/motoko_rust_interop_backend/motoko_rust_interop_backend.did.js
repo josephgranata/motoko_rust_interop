@@ -7,6 +7,13 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'storageLoadWasm' : IDL.Func(
+        [IDL.Vec(IDL.Nat8)],
+        [IDL.Record({ 'total' : IDL.Nat, 'chunks' : IDL.Nat })],
+        [],
+      ),
+    'storateResetWasm' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
+    'wasmHash' : IDL.Func([], [IDL.Vec(IDL.Nat8)], []),
   });
 };
 export const init = ({ IDL }) => { return []; };
