@@ -1,3 +1,6 @@
+mod types;
+mod store;
+
 use ic_cdk::api::management_canister::main::{ canister_status, CanisterIdRecord, deposit_cycles };
 use ic_cdk::{ api, storage, print };
 use candid::{ Nat, Principal };
@@ -38,7 +41,9 @@ fn pre_upgrade() {
 fn post_upgrade() {
     let (owner,): (Option<Principal>,) = storage::stable_restore().unwrap();
     let new_state: State = State { owner };
-    STATE.with(|state| *state.borrow_mut() = new_state);
+    STATE.with(|state| {
+        *state.borrow_mut() = new_state;
+    });
 }
 
 #[query]
@@ -54,6 +59,17 @@ fn greet(name: String) -> String {
 fn get_owner(state: &State) -> Option<Principal> {
     state.owner
 }
+
+/**
+* Upload
+*/
+
+#[allow(non_snake_case)]
+async fn initUpload() {}
+
+/**
+ * Canister mgmt
+ */
 
 #[update]
 async fn transfer_cycles() {

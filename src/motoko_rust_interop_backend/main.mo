@@ -14,6 +14,7 @@ actor Main {
 
   private stable var canisterId : ?Principal = null;
 
+  // I can probably make this optional for a cleaner implementation and do not install code if I forgot to upload it
   private stable var storageWasm: [Nat8] = [];
 
   // Source:
@@ -53,6 +54,7 @@ actor Main {
 
     let { canister_id } = await ic.create_canister({ settings = null });
 
+    // Test purpose only
     canisterId := ?canister_id;
 
     let self : Principal = Principal.fromActor(Main);
