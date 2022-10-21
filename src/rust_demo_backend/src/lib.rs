@@ -6,6 +6,9 @@ use ic_cdk::{ api, storage, print };
 use candid::{ Nat, Principal };
 use ic_cdk_macros::{ init, query, update, pre_upgrade, post_upgrade };
 use std::cell::RefCell;
+use std::collections::HashMap;
+
+use crate::types::State;
 
 // https://medium.com/encode-club/encode-x-internet-computer-intro-to-building-on-the-ic-in-rust-video-slides-b496d6baad08
 // https://github.com/hpeebles/rust-canister-demo/blob/master/todo/src/lib.rs
@@ -17,33 +20,33 @@ thread_local! {
 // TODO: https://forum.dfinity.org/t/init-arg-mandatory-in-state/16009/ ?
 // I would rather like to have a mandatory { owner: Principal } without having to assign a default value.
 
-#[derive(Default)]
-struct State {
-    owner: Option<Principal>,
-}
-
 #[init]
 fn init(user: Principal) {
     print(format!("Initializing bucket., {}", user.to_text()));
     STATE.with(|state| {
         *state.borrow_mut() = State {
-            owner: Some(user),
+            user: Some(user),
+            batches: HashMap::new(),
+            chunks: HashMap::new(),
+            assets: HashMap::new()
         };
     });
 }
 
 #[pre_upgrade]
 fn pre_upgrade() {
-    STATE.with(|state| storage::stable_save((&state.borrow().owner,)).unwrap());
+    STATE.with(|state| storage::stable_save((&state.borrow().user,)).unwrap());
 }
 
 #[post_upgrade]
 fn post_upgrade() {
-    let (owner,): (Option<Principal>,) = storage::stable_restore().unwrap();
-    let new_state: State = State { owner };
-    STATE.with(|state| {
-        *state.borrow_mut() = new_state;
-    });
+    // TODO: pre and post upgrade
+
+    // let (owner,): (Option<Principal>,) = storage::stable_restore().unwrap();
+    // let new_state: State = State { owner };
+    // STATE.with(|state| {
+    //     *state.borrow_mut() = new_state;
+    // });
 }
 
 #[query]
