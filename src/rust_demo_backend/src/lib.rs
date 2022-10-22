@@ -2,7 +2,7 @@ mod types;
 mod store;
 
 use ic_cdk::api::management_canister::main::{CanisterIdRecord, deposit_cycles};
-use ic_cdk::api::{canister_balance128, caller};
+use ic_cdk::api::{canister_balance128, caller, trap};
 use ic_cdk::{storage, print};
 use candid::{Principal};
 use ic_cdk_macros::{init, query, update, pre_upgrade, post_upgrade};
@@ -87,7 +87,7 @@ async fn uploadChunk(chunk: Chunk) -> UploadChunk {
 
     match result {
         Ok(chunk_id) => { UploadChunk { chunkId: chunk_id } }
-        Err(error) => panic!("{}", error)
+        Err(error) => trap(error)
     }
 }
 
@@ -100,7 +100,7 @@ async fn commitUpload(commit: CommitBatch) {
 
     match result {
         Ok(_) => (),
-        Err(error) => panic!("{}", error)
+        Err(error) => trap(error)
     }
 }
 
