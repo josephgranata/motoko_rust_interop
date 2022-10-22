@@ -1,11 +1,11 @@
 // Non snake case for backwards compatibility
 #![allow(non_snake_case)]
 
-use ic_cdk::{api::{time}};
+use ic_cdk::{ api::{ time } };
 
-use crate::{STATE, types::storage::{AssetKey, Batch, State, Chunk}};
+use crate::{ STATE, types::storage::{ AssetKey, Batch, State, Chunk } };
 use crate::types::interface::CommitBatch;
-use crate::types::storage::{Asset, AssetEncoding};
+use crate::types::storage::{ Asset, AssetEncoding };
 
 // Upload batch and chunks
 
@@ -45,7 +45,7 @@ fn create_batch_impl(key: AssetKey, state: &mut State) -> u128 {
 
 fn create_chunk_impl(
     Chunk { batchId, content }: Chunk,
-    state: &mut State,
+    state: &mut State
 ) -> Result<u128, &'static str> {
     let batch = state.batches.get(&batchId);
 
@@ -75,20 +75,20 @@ fn create_chunk_impl(
 
 fn commit_batch_impl(
     commitBatch: CommitBatch,
-    state: &mut State,
+    state: &mut State
 ) -> Result<&'static str, &'static str> {
     let batch = state.batches.get(&commitBatch.batchId);
 
     match batch {
         None => Err("No batch to commit."),
-        Some(b) => STATE.with(|state| commit_chunks(commitBatch, b, &mut state.borrow_mut()))
+        Some(b) => STATE.with(|state| commit_chunks(commitBatch, b, &mut state.borrow_mut())),
     }
 }
 
 fn commit_chunks(
     CommitBatch { chunkIds, batchId, headers }: CommitBatch,
     batch: &Batch,
-    state: &mut State,
+    state: &mut State
 ) -> Result<&'static str, &'static str> {
     let now = time();
 
@@ -138,7 +138,7 @@ fn commit_chunks(
         },
     });
 
-    // clearBatch({batchId; chunkIds});
+    clear_batch(batchId, chunkIds);
 
     return Ok("Batch committed.");
 }
@@ -168,8 +168,20 @@ fn clear_expired_batches_impl(state: &mut State) {
         match state.batches.get(&chunk.batchId) {
             None => {
                 state.chunks.remove(chunk_id);
-            },
+            }
             _ => (),
         }
     }
+}
+
+fn clear_batch(batchId: u128, chunkIds: Vec<u128>) {
+    STATE.with(|state| clear_batch_impl(batchId, chunkIds, &mut state.borrow_mut()));
+}
+
+fn clear_batch_impl(batchId: u128, chunkIds: Vec<u128>, state: &mut State) {
+    for chunk_id in chunkIds.iter() {
+        state.chunks.remove(chunk_id);
+    }
+
+    state.batches.remove(&batchId);
 }
