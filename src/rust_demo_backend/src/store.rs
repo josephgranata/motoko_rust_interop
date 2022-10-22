@@ -43,7 +43,7 @@ fn create_chunk_impl(Chunk {batchId, content}: Chunk, state: &mut State) -> Resu
             state.batches.insert(
                 batchId,
                 Batch {
-                    key: batch.key,
+                    key: b.key.clone(),
                     expiresAt: now + BATCH_EXPIRY_NANOS
                 }
             );
