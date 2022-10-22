@@ -92,7 +92,8 @@ async fn transfer_cycles() {
 
     if cycles > Nat::from(0) {
         let arg_deposit = CanisterIdRecord { canister_id: caller };
-        // TODO: issue https://forum.dfinity.org/t/candid-nat-to-u128/16016
-        deposit_cycles(arg_deposit, 800_000_000_000u128).await.unwrap();
+        // Source: https://forum.dfinity.org/t/candid-nat-to-u128/16016
+        // or cycles.0.to_u128()
+        deposit_cycles(arg_deposit, u128::try_from(cycles.0).unwrap()).await.unwrap();
     }
 }
