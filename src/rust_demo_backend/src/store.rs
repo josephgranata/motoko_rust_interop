@@ -1,11 +1,11 @@
 // Non snake case for backwards compatibility
 #![allow(non_snake_case)]
 
-use ic_cdk::{ api::{ time } };
+use ic_cdk::{api::{time}};
 
-use crate::{ STATE, types::storage::{ AssetKey, Batch, State, Chunk } };
+use crate::{STATE, types::storage::{AssetKey, Batch, State, Chunk}};
 use crate::types::interface::CommitBatch;
-use crate::types::storage::{ Asset, AssetEncoding };
+use crate::types::storage::{Asset, AssetEncoding};
 
 // Upload batch and chunks
 
@@ -30,6 +30,8 @@ fn create_batch_impl(key: AssetKey, state: &mut State) -> u128 {
     let now = time();
 
     unsafe {
+        clear_expired_batches();
+
         NEXT_BACK_ID = NEXT_BACK_ID + 1;
 
         state.batches.insert(NEXT_BACK_ID, Batch {
@@ -43,7 +45,7 @@ fn create_batch_impl(key: AssetKey, state: &mut State) -> u128 {
 
 fn create_chunk_impl(
     Chunk { batchId, content }: Chunk,
-    state: &mut State
+    state: &mut State,
 ) -> Result<u128, &'static str> {
     let batch = state.batches.get(&batchId);
 
@@ -73,7 +75,7 @@ fn create_chunk_impl(
 
 fn commit_batch_impl(
     commitBatch: CommitBatch,
-    state: &mut State
+    state: &mut State,
 ) -> Result<&'static str, &'static str> {
     let batch = state.batches.get(&commitBatch.batchId);
 
@@ -86,12 +88,12 @@ fn commit_batch_impl(
 fn commit_chunks(
     CommitBatch { chunkIds, batchId, headers }: CommitBatch,
     batch: &Batch,
-    state: &mut State
+    state: &mut State,
 ) -> Result<&'static str, &'static str> {
     let now = time();
 
     if now > batch.expiresAt {
-        // TODO: clearExpiredBatches();
+        clear_expired_batches();
         return Err("Batch did not complete in time. Chunks cannot be committed.");
     }
 
@@ -139,4 +141,35 @@ fn commit_chunks(
     // clearBatch({batchId; chunkIds});
 
     return Ok("Batch committed.");
+}
+
+fn clear_expired_batches() {
+    STATE.with(|state| clear_expired_batches_impl(&mut state.borrow_mut()));
+}
+
+fn clear_expired_batches_impl(state: &mut State) {
+    let now = time();
+
+    // Remove expired batches
+
+    let batches = STATE.with(|state| state.borrow().batches.clone());
+
+    for (batch_id, batch) in batches.iter() {
+        if now > batch.expiresAt {
+            state.batches.remove(batch_id);
+        }
+    }
+
+    // Remove chunk without existing batches (those we just deleted above)
+
+    let chunks = STATE.with(|state| state.borrow().chunks.clone());
+
+    for (chunk_id, chunk) in chunks.iter() {
+        match state.batches.get(&chunk.batchId) {
+            None => {
+                state.chunks.remove(chunk_id);
+            },
+            _ => (),
+        }
+    }
 }
