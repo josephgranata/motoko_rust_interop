@@ -78,22 +78,20 @@ async fn initUpload() {}
 async fn transfer_cycles() {
     let caller = api::caller();
 
+    // TODO: is caller === manager
+
     // TODO: determine effective threshold - get freezing_threshold_in_cycles via ic.canister_status()
     // use freezing_threshold_in_cycles - https://github.com/dfinity/interface-spec/pull/18/files
     // https://forum.dfinity.org/t/minimal-cycles-to-delete-canister/15926
 
-    // TODO: is caller === manager
-
-    let arg = CanisterIdRecord { canister_id: ic_cdk::id() };
-    let response = canister_status(arg).await.unwrap().0;
-    let cycles: Nat = response.cycles - Nat::from(100_000_000_000u128);
+    let balance: u128 = api::canister_balance128();
+    let cycles: u128 = balance - 100_000_000_000u128;
 
     print(format!("Current cycles {}", cycles));
 
-    if cycles > Nat::from(0) {
+    if cycles > 0 {
         let arg_deposit = CanisterIdRecord { canister_id: caller };
         // Source: https://forum.dfinity.org/t/candid-nat-to-u128/16016
-        // or cycles.0.to_u128()
-        deposit_cycles(arg_deposit, u128::try_from(cycles.0).unwrap()).await.unwrap();
+        deposit_cycles(arg_deposit, cycles).await.unwrap();
     }
 }
