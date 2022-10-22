@@ -1,15 +1,16 @@
 mod types;
 mod store;
 
-use ic_cdk::api::management_canister::main::{ canister_status, CanisterIdRecord, deposit_cycles };
-use ic_cdk::api::{ canister_balance128, caller };
-use ic_cdk::{ storage, print };
-use candid::{ Principal };
-use ic_cdk_macros::{ init, query, update, pre_upgrade, post_upgrade };
+use ic_cdk::api::management_canister::main::{CanisterIdRecord, deposit_cycles};
+use ic_cdk::api::{canister_balance128, caller};
+use ic_cdk::{storage, print};
+use candid::{Principal};
+use ic_cdk_macros::{init, query, update, pre_upgrade, post_upgrade};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use crate::types::storage::State;
+use crate::store::{commit_batch, create_batch, create_chunk};
+use crate::types::{interface::{InitUpload, UploadChunk,CommitBatch}, storage::{AssetKey, State, Chunk}};
 
 // https://medium.com/encode-club/encode-x-internet-computer-intro-to-building-on-the-ic-in-rust-video-slides-b496d6baad08
 // https://github.com/hpeebles/rust-canister-demo/blob/master/todo/src/lib.rs
@@ -29,14 +30,14 @@ fn init(user: Principal) {
             user: Some(user),
             batches: HashMap::new(),
             chunks: HashMap::new(),
-            assets: HashMap::new()
+            assets: HashMap::new(),
         };
     });
 }
 
 #[pre_upgrade]
 fn pre_upgrade() {
-    STATE.with(|state| storage::stable_save((&state.borrow().user,)).unwrap());
+    STATE.with(|state| storage::stable_save((&state.borrow().user, )).unwrap());
 }
 
 #[post_upgrade]
@@ -64,16 +65,48 @@ fn get_owner(state: &State) -> Option<Principal> {
     state.user
 }
 
-/**
-* Upload
-*/
+//
+// Upload
+//
 
 #[allow(non_snake_case)]
-async fn initUpload() {}
+#[update]
+async fn initUpload(key: AssetKey) -> InitUpload {
+    // TODO: is caller === user
 
-/**
- * Canister mgmt
- */
+    let batchId: u128 = create_batch(key);
+    return InitUpload { batchId };
+}
+
+#[allow(non_snake_case)]
+#[update]
+async fn uploadChunk(chunk: Chunk) -> UploadChunk {
+    // TODO: is caller === user
+
+    let result = create_chunk(chunk);
+
+    match result {
+        Ok(chunk_id) => { UploadChunk { chunkId: chunk_id } }
+        Err(error) => panic!("{}", error)
+    }
+}
+
+#[allow(non_snake_case)]
+#[update]
+async fn commitUpload(commit: CommitBatch) {
+    // TODO: is caller === user
+
+    let result = commit_batch(commit);
+
+    match result {
+        Ok(_) => (),
+        Err(error) => panic!("{}", error)
+    }
+}
+
+//
+// Canister mgmt
+//
 
 #[update]
 async fn transfer_cycles() {

@@ -3,7 +3,7 @@
 
 pub mod storage {
     use std::collections::HashMap;
-    use candid::{ Principal, CandidType };
+    use candid::{Principal, CandidType};
     use serde::Deserialize;
     use std::clone::Clone;
     use crate::types::http::HeaderField;
@@ -66,15 +66,25 @@ pub mod storage {
 }
 
 pub mod interface {
-    use candid::{ CandidType };
+    use candid::{CandidType, Deserialize};
 
     use crate::types::http::HeaderField;
 
     #[derive(CandidType)]
+    pub struct InitUpload {
+        pub batchId: u128,
+    }
+
+    #[derive(CandidType)]
+    pub struct UploadChunk {
+        pub chunkId: u128,
+    }
+
+    #[derive(CandidType, Deserialize)]
     pub struct CommitBatch {
-        pub batchId : u128,
-        pub headers : Vec<HeaderField>,
-        pub chunkIds : Vec<u128>,
+        pub batchId: u128,
+        pub headers: Vec<HeaderField>,
+        pub chunkIds: Vec<u128>,
     }
 }
 
@@ -82,5 +92,5 @@ pub mod http {
     use candid::{CandidType, Deserialize};
 
     #[derive(CandidType, Deserialize, Clone)]
-    pub struct HeaderField (String, String);
+    pub struct HeaderField(String, String);
 }
