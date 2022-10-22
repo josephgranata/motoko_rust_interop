@@ -2,7 +2,8 @@ mod types;
 mod store;
 
 use ic_cdk::api::management_canister::main::{ canister_status, CanisterIdRecord, deposit_cycles };
-use ic_cdk::{ api, storage, print };
+use ic_cdk::api::{ canister_balance128, caller };
+use ic_cdk::{ storage, print };
 use candid::{ Nat, Principal };
 use ic_cdk_macros::{ init, query, update, pre_upgrade, post_upgrade };
 use std::cell::RefCell;
@@ -60,7 +61,7 @@ fn greet(name: String) -> String {
 }
 
 fn get_owner(state: &State) -> Option<Principal> {
-    state.owner
+    state.user
 }
 
 /**
@@ -76,22 +77,20 @@ async fn initUpload() {}
 
 #[update]
 async fn transfer_cycles() {
-    let caller = api::caller();
+    let caller = caller();
 
     // TODO: is caller === manager
 
-    // TODO: determine effective threshold - get freezing_threshold_in_cycles via ic.canister_status()
-    // use freezing_threshold_in_cycles - https://github.com/dfinity/interface-spec/pull/18/files
-    // https://forum.dfinity.org/t/minimal-cycles-to-delete-canister/15926
+    // TODO: determine effective threshold - how few cycles should be retained before deleting the canister?
+    // use freezing_threshold_in_cycles? - https://github.com/dfinity/interface-spec/pull/18/files
+    // actually above PR was ultimately deleted? - https://forum.dfinity.org/t/minimal-cycles-to-delete-canister/15926
 
-    let balance: u128 = api::canister_balance128();
+    // Source: https://forum.dfinity.org/t/candid-nat-to-u128/16016
+    let balance: u128 = canister_balance128();
     let cycles: u128 = balance - 100_000_000_000u128;
-
-    print(format!("Current cycles {}", cycles));
 
     if cycles > 0 {
         let arg_deposit = CanisterIdRecord { canister_id: caller };
-        // Source: https://forum.dfinity.org/t/candid-nat-to-u128/16016
         deposit_cycles(arg_deposit, cycles).await.unwrap();
     }
 }
