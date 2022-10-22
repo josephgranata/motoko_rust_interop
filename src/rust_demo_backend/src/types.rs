@@ -6,11 +6,12 @@ pub mod storage {
     use candid::{ Principal, CandidType };
     use serde::Deserialize;
     use std::clone::Clone;
+    use crate::types::http::HeaderField;
 
     // Internal types
 
-    pub type Batches = HashMap<u8, Batch>;
-    pub type Chunks = HashMap<u8, Chunk>;
+    pub type Batches = HashMap<u128, Batch>;
+    pub type Chunks = HashMap<u128, Chunk>;
     pub type Assets = HashMap<String, Asset>;
 
     #[derive(Default, CandidType, Deserialize, Clone)]
@@ -25,15 +26,15 @@ pub mod storage {
 
     #[derive(CandidType, Deserialize, Clone)]
     pub struct Chunk {
-        pub batchId: u8,
+        pub batchId: u128,
         pub content: Vec<u8>,
     }
 
     #[derive(CandidType, Deserialize, Clone)]
     pub struct AssetEncoding {
-        pub modified: u32,
+        pub modified: u64,
         pub contentChunks: Vec<Vec<u8>>,
-        pub totalLength: u8,
+        pub totalLength: u128,
     }
 
     #[derive(CandidType, Deserialize, Clone)]
@@ -53,7 +54,7 @@ pub mod storage {
     #[derive(CandidType, Deserialize, Clone)]
     pub struct Asset {
         pub key: AssetKey,
-        pub headers: Vec<(String, String)>,
+        pub headers: Vec<HeaderField>,
         pub encoding: AssetEncoding,
     }
 
@@ -64,9 +65,22 @@ pub mod storage {
     }
 }
 
-pub mod http {
+pub mod interface {
     use candid::{ CandidType };
 
+    use crate::types::http::HeaderField;
+
     #[derive(CandidType)]
+    pub struct CommitBatch {
+        pub batchId : u128,
+        pub headers : Vec<HeaderField>,
+        pub chunkIds : Vec<u128>,
+    }
+}
+
+pub mod http {
+    use candid::{CandidType, Deserialize};
+
+    #[derive(CandidType, Deserialize, Clone)]
     pub struct HeaderField (String, String);
 }
