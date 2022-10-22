@@ -1,7 +1,6 @@
 use ic_cdk::{ api };
 
-use crate::{ STATE, types::{ AssetKey, Batch, State } };
-use crate::types::Chunk;
+use crate::{ STATE, types::storage::{ AssetKey, Batch, State, Chunk } };
 
 // Upload batch and chunks
 

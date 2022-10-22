@@ -9,7 +9,7 @@ use ic_cdk_macros::{ init, query, update, pre_upgrade, post_upgrade };
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use crate::types::State;
+use crate::types::storage::State;
 
 // https://medium.com/encode-club/encode-x-internet-computer-intro-to-building-on-the-ic-in-rust-video-slides-b496d6baad08
 // https://github.com/hpeebles/rust-canister-demo/blob/master/todo/src/lib.rs
