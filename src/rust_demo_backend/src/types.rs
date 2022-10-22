@@ -1,12 +1,11 @@
+// Non snake case for backwards compatibility
 #![allow(non_snake_case)]
 
 pub mod storage {
     use std::collections::HashMap;
-    use candid::{ CandidType, Principal };
+    use candid::{ Principal, CandidType };
     use serde::Deserialize;
     use std::clone::Clone;
-
-    // Non snake case for backwards compatibility
 
     // Internal types
 
@@ -63,4 +62,11 @@ pub mod storage {
         pub key: AssetKey,
         pub expiresAt: u64,
     }
+}
+
+pub mod http {
+    use candid::{ CandidType };
+
+    #[derive(CandidType)]
+    pub struct HeaderField (String, String);
 }

@@ -4,7 +4,7 @@ mod store;
 use ic_cdk::api::management_canister::main::{ canister_status, CanisterIdRecord, deposit_cycles };
 use ic_cdk::api::{ canister_balance128, caller };
 use ic_cdk::{ storage, print };
-use candid::{ Nat, Principal };
+use candid::{ Principal };
 use ic_cdk_macros::{ init, query, update, pre_upgrade, post_upgrade };
 use std::cell::RefCell;
 use std::collections::HashMap;
