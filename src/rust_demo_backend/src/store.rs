@@ -77,11 +77,12 @@ fn commit_batch_impl(
     commitBatch: CommitBatch,
     state: &mut State
 ) -> Result<&'static str, &'static str> {
-    let batch = state.batches.get(&commitBatch.batchId);
+    let batches = state.batches.clone();
+    let batch = batches.get(&commitBatch.batchId);
 
     match batch {
         None => Err("No batch to commit."),
-        Some(b) => STATE.with(|state| commit_chunks(commitBatch, b, &mut state.borrow_mut())),
+        Some(b) => commit_chunks(commitBatch, b, state),
     }
 }
 
