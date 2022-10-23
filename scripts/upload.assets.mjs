@@ -25,6 +25,8 @@ const uploadHtml = async ({ name, folder, src, fullPath }) => {
     });
 
     console.log(`[${name} - ${chunkId}] Chunk.`);
+
+    return chunkId;
   };
 
   for (let start = 0; start < buffer.length; start += chunkSize) {
@@ -32,13 +34,13 @@ const uploadHtml = async ({ name, folder, src, fullPath }) => {
     promises.push(upload(chunks));
   }
 
-  await Promise.all(promises);
+  const chunkIds = await Promise.all(promises);
 
   console.log(`[${name}] Chunks.`);
 
   await bucketActor.commitUpload({
     batchId,
-    chunkIds: [chunkId],
+    chunkIds: chunkIds,
     headers: [
       ["Content-Type", "text/html"],
       ["accept-ranges", "bytes"],
