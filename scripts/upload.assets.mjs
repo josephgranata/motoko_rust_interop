@@ -1,12 +1,12 @@
 import { readFile } from "fs/promises";
 import { bucketActor, canisterId } from "./bucket.actor.mjs";
 
-const uploadHtml = async ({ name, folder, src, fullPath, token }) => {
+const uploadHtml = async ({ name, folder, src, fullPath, token, mimeType }) => {
   const buffer = await readFile(src);
 
   const { batchId } = await bucketActor.initUpload({
     name,
-    mimeType: "text/html",
+    mimeType,
     fullPath,
     token: token ? [token] : [],
     folder,
@@ -44,7 +44,7 @@ const uploadHtml = async ({ name, folder, src, fullPath, token }) => {
     batchId,
     chunkIds: chunkIds,
     headers: [
-      ["Content-Type", "text/html"],
+      ["Content-Type", mimeType],
       ["accept-ranges", "bytes"],
       ...[["Cache-Control", `max-age=0`]],
     ],
@@ -60,19 +60,22 @@ const uploadAssets = async () => {
       name: "index.html",
       folder: "resources",
       fullPath: "/",
+      mimeType: "text/html"
     }),
     uploadHtml({
       src: "./data/post.html",
       name: "post1234",
       folder: "d",
       fullPath: "/d/post1234",
+      mimeType: "text/html"
     }),
     uploadHtml({
       src: "./data/sample_1920x1280.png",
       name: "sample_1920x1280.png",
       folder: "images",
       fullPath: "/images/sample_1920x1280.png",
-      token: "123"
+      token: "123",
+      mimeType: "image/jpeg"
     }),
   ]);
 };
