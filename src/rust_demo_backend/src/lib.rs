@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use crate::store::{commit_batch, create_batch, create_chunk, get_asset, get_asset_for_url};
 use crate::types::{interface::{InitUpload, UploadChunk, CommitBatch}, storage::{AssetKey, State, Chunk, Asset, AssetEncoding}, http::{HttpRequest, HttpResponse, HeaderField, StreamingStrategy, StreamingCallbackToken, StreamingCallbackHttpResponse}};
 
+// Rust on the IC introduction by Hamish Peebles:
 // https://medium.com/encode-club/encode-x-internet-computer-intro-to-building-on-the-ic-in-rust-video-slides-b496d6baad08
 // https://github.com/hpeebles/rust-canister-demo/blob/master/todo/src/lib.rs
 
