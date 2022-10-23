@@ -4,14 +4,14 @@ mod store;
 use ic_cdk::api::management_canister::main::{CanisterIdRecord, deposit_cycles};
 use ic_cdk_macros::{init, update, pre_upgrade, post_upgrade, query};
 use ic_cdk::api::{canister_balance128, caller, trap};
-use ic_cdk::export::candid::{candid_method,export_service};
+use ic_cdk::export::candid::{candid_method, export_service};
 use ic_cdk::{storage, print};
 use candid::{Principal};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use crate::store::{commit_batch, create_batch, create_chunk};
-use crate::types::{interface::{InitUpload, UploadChunk, CommitBatch}, storage::{AssetKey, State, Chunk}};
+use crate::store::{commit_batch, create_batch, create_chunk, get_asset_for_url};
+use crate::types::{interface::{InitUpload, UploadChunk, CommitBatch}, storage::{AssetKey, State, Chunk, Asset}, http::{HttpRequest, HttpResponse}};
 
 // https://medium.com/encode-club/encode-x-internet-computer-intro-to-building-on-the-ic-in-rust-video-slides-b496d6baad08
 // https://github.com/hpeebles/rust-canister-demo/blob/master/todo/src/lib.rs
@@ -22,6 +22,9 @@ thread_local! {
 
 // TODO: https://forum.dfinity.org/t/init-arg-mandatory-in-state/16009/ ?
 // I would rather like to have a mandatory { owner: Principal } without having to assign a default value.
+
+// TODO: test upgrade
+// TODO: batches and chunks do not need to be in state
 
 #[init]
 fn init(user: Principal) {
@@ -50,6 +53,46 @@ fn post_upgrade() {
     // STATE.with(|state| {
     //     *state.borrow_mut() = new_state;
     // });
+}
+
+//
+// Http
+//
+
+#[query]
+#[candid_method(query)]
+fn http_request(HttpRequest {method, url, headers: _, body: _}: HttpRequest) -> HttpResponse {
+    if method != "GET" {
+        return HttpResponse {
+            body: "Method Not Allowed.".as_bytes().to_vec(),
+            headers: Vec::new(),
+            status_code: 405,
+            streaming_strategy: None
+        }
+    }
+
+    let result = get_asset_for_url(url);
+
+    // TODO: stream strategy
+
+    match result {
+        Ok(Asset {key, headers, encoding}) => {
+            return HttpResponse {
+                body: encoding.contentChunks[0].clone(),
+                headers,
+                status_code: 200,
+                streaming_strategy: None
+            }
+        }
+        Err(_) => ()
+    }
+
+    return HttpResponse {
+        body: "Permission denied. Could not perform this operation.".as_bytes().to_vec(),
+        headers: Vec::new(),
+        status_code: 405,
+        streaming_strategy: None
+    }
 }
 
 //

@@ -1,13 +1,72 @@
 // Non snake case for backwards compatibility
 #![allow(non_snake_case)]
 
-use ic_cdk::{ api::{ time } };
+use ic_cdk::{api::{time}};
 
-use crate::{ STATE, types::storage::{ AssetKey, Batch, State, Chunk } };
+use crate::{STATE, types::storage::{AssetKey, Batch, State, Chunk}};
 use crate::types::interface::CommitBatch;
-use crate::types::storage::{ Asset, AssetEncoding };
+use crate::types::storage::{Asset, AssetEncoding};
 
+//
+// Getter, list and delete
+//
+
+pub fn get_asset_for_url(url: String) -> Result<Asset, &'static str> {
+    if url.is_empty() {
+        return Err("No url provided.");
+    }
+
+    let split: Vec<&str> = url.split("?token=").collect();
+    let full_path: String = ["/", split[0].trim_start_matches('/')].join("");
+
+    // Token protected assets
+    if split.len() > 1 {
+        let token = split[1];
+        return get_asset(full_path, Some(token.to_string()));
+    }
+
+    // Map /index.html to / because we are using / as root
+    if full_path == "/index.html" {
+        return get_asset(String::from("/"), None);
+    };
+
+    return get_asset(full_path, None);
+}
+
+fn get_asset(full_path: String, token: Option<String>) -> Result<Asset, &'static str> {
+    STATE.with(|state| get_asset_impl(full_path, token, &mut state.borrow()))
+}
+
+fn get_asset_impl(full_path: String, token: Option<String>, state: &State) -> Result<Asset, &'static str> {
+    let asset = state.assets.get(&full_path);
+
+    match asset {
+        None => Err("No asset."),
+        Some(asset) => {
+            match &asset.key.token {
+                None => Ok(asset.clone()),
+                Some(assetToken) => get_protected_asset(asset, assetToken, token)
+            }
+        }
+    }
+}
+
+fn get_protected_asset(asset: &Asset, assetToken: &String, token: Option<String>) -> Result<Asset, &'static str> {
+    match token {
+        None => Err("No token provided."),
+        Some(token) => {
+            if &token == assetToken {
+                return Ok(asset.clone());
+            }
+
+            return Err("Invalid token.");
+        }
+    }
+}
+
+//
 // Upload batch and chunks
+//
 
 const BATCH_EXPIRY_NANOS: u64 = 300_000_000_000;
 
@@ -45,7 +104,7 @@ fn create_batch_impl(key: AssetKey, state: &mut State) -> u128 {
 
 fn create_chunk_impl(
     Chunk { batchId, content }: Chunk,
-    state: &mut State
+    state: &mut State,
 ) -> Result<u128, &'static str> {
     let batch = state.batches.get(&batchId);
 
@@ -75,7 +134,7 @@ fn create_chunk_impl(
 
 fn commit_batch_impl(
     commitBatch: CommitBatch,
-    state: &mut State
+    state: &mut State,
 ) -> Result<&'static str, &'static str> {
     let batches = state.batches.clone();
     let batch = batches.get(&commitBatch.batchId);
@@ -89,7 +148,7 @@ fn commit_batch_impl(
 fn commit_chunks(
     CommitBatch { chunkIds, batchId, headers }: CommitBatch,
     batch: &Batch,
-    state: &mut State
+    state: &mut State,
 ) -> Result<&'static str, &'static str> {
     let now = time();
 

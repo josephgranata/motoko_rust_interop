@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import { bucketActor } from "./bucket.actor.mjs";
+import { bucketActor, canisterId } from "./bucket.actor.mjs";
 
 const uploadHtml = async ({ name, folder, src, fullPath }) => {
   const buffer = await readFile(src);
@@ -19,6 +19,8 @@ const uploadHtml = async ({ name, folder, src, fullPath }) => {
   const promises = [];
 
   const upload = async (chunks) => {
+    console.log(`Uploading asset in: ${canisterId}`);
+
     const { chunkId } = await bucketActor.uploadChunk({
       batchId,
       content: [...new Uint8Array(chunks)],
