@@ -16,10 +16,20 @@ pub mod storage {
 
     #[derive(Default, CandidType, Deserialize, Clone)]
     pub struct State {
+        pub stable: StableState,
+        pub runtime: RuntimeState,
+    }
+
+    #[derive(Default, CandidType, Deserialize, Clone)]
+    pub struct StableState {
         pub user: Option<Principal>,
-        pub batches: Batches,
-        pub chunks: Chunks,
         pub assets: Assets,
+    }
+
+    #[derive(Default, CandidType, Deserialize, Clone)]
+    pub struct RuntimeState {
+        pub chunks: Chunks,
+        pub batches: Batches,
     }
 
     // Exposed types
@@ -99,7 +109,7 @@ pub mod http {
         pub url: String,
         pub method: String,
         pub headers: Vec<HeaderField>,
-        pub body: Vec<u8>
+        pub body: Vec<u8>,
     }
 
     #[derive(CandidType, Deserialize, Clone)]

@@ -11,7 +11,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::store::{commit_batch, create_batch, create_chunk, get_asset, get_asset_for_url};
-use crate::types::{interface::{InitUpload, UploadChunk, CommitBatch}, storage::{AssetKey, State, Chunk, Asset, AssetEncoding}, http::{HttpRequest, HttpResponse, HeaderField, StreamingStrategy, StreamingCallbackToken, StreamingCallbackHttpResponse}};
+use crate::types::{interface::{InitUpload, UploadChunk, CommitBatch}, storage::{AssetKey, State, Chunk, Asset, AssetEncoding, StableState, RuntimeState}, http::{HttpRequest, HttpResponse, HeaderField, StreamingStrategy, StreamingCallbackToken, StreamingCallbackHttpResponse}};
 
 // Rust on the IC introduction by Hamish Peebles:
 // https://medium.com/encode-club/encode-x-internet-computer-intro-to-building-on-the-ic-in-rust-video-slides-b496d6baad08
@@ -24,36 +24,38 @@ thread_local! {
 // TODO: https://forum.dfinity.org/t/init-arg-mandatory-in-state/16009/ ?
 // I would rather like to have a mandatory { owner: Principal } without having to assign a default value.
 
-// TODO: test upgrade
-// TODO: batches and chunks do not need to be in state
-
 #[init]
 fn init(user: Principal) {
     print(format!("Initializing bucket., {}", user.to_text()));
     STATE.with(|state| {
         *state.borrow_mut() = State {
-            user: Some(user),
-            batches: HashMap::new(),
-            chunks: HashMap::new(),
-            assets: HashMap::new(),
+            stable: StableState {
+                user: Some(user),
+                assets: HashMap::new(),
+            },
+            runtime: RuntimeState {
+                chunks: HashMap::new(),
+                batches: HashMap::new(),
+            },
         };
     });
 }
 
 #[pre_upgrade]
 fn pre_upgrade() {
-    STATE.with(|state| storage::stable_save((&state.borrow().user, )).unwrap());
+    STATE.with(|state| storage::stable_save((&state.borrow().stable, )).unwrap());
 }
 
 #[post_upgrade]
 fn post_upgrade() {
-    // TODO: pre and post upgrade
-
-    // let (owner,): (Option<Principal>,) = storage::stable_restore().unwrap();
-    // let new_state: State = State { owner };
-    // STATE.with(|state| {
-    //     *state.borrow_mut() = new_state;
-    // });
+    let (stable, ): (StableState, ) = ic_cdk::storage::stable_restore().unwrap();
+    STATE.with(|state| *state.borrow_mut() = State {
+        stable,
+        runtime: RuntimeState {
+            chunks: HashMap::new(),
+            batches: HashMap::new(),
+        },
+    });
 }
 
 //
@@ -97,15 +99,15 @@ fn http_request(HttpRequest { method, url, headers: _, body: _ }: HttpRequest) -
 #[query]
 #[candid_method(query)]
 fn http_request_streaming_callback(StreamingCallbackToken { token, headers, index, sha256: _, fullPath }: StreamingCallbackToken) -> StreamingCallbackHttpResponse {
-    let result = get_asset(fullPath, token, );
+    let result = get_asset(fullPath, token);
 
     match result {
         Err(err) => trap(&*["Streamed asset not found: ", err].join("")),
         Ok(asset) => {
             return StreamingCallbackHttpResponse {
                 token: create_token(asset.key, index, &asset.encoding, &headers),
-                body: asset.encoding.contentChunks[index].clone()
-            }
+                body: asset.encoding.contentChunks[index].clone(),
+            };
         }
     }
 }

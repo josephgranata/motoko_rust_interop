@@ -3,7 +3,7 @@
 
 use ic_cdk::{api::{time}};
 
-use crate::{STATE, types::storage::{AssetKey, Batch, State, Chunk}};
+use crate::{RuntimeState, StableState, STATE, types::storage::{AssetKey, Batch, State, Chunk}};
 use crate::types::interface::CommitBatch;
 use crate::types::storage::{Asset, AssetEncoding};
 
@@ -34,10 +34,10 @@ pub fn get_asset_for_url(url: String) -> Result<Asset, &'static str> {
 }
 
 pub fn get_asset(full_path: String, token: Option<String>) -> Result<Asset, &'static str> {
-    STATE.with(|state| get_asset_impl(full_path, token, &mut state.borrow()))
+    STATE.with(|state| get_asset_impl(full_path, token, &state.borrow().stable))
 }
 
-fn get_asset_impl(full_path: String, token: Option<String>, state: &State) -> Result<Asset, &'static str> {
+fn get_asset_impl(full_path: String, token: Option<String>, state: &StableState) -> Result<Asset, &'static str> {
     let asset = state.assets.get(&full_path);
 
     match asset {
@@ -74,18 +74,18 @@ static mut NEXT_BACK_ID: u128 = 0;
 static mut NEXT_CHUNK_ID: u128 = 0;
 
 pub fn create_batch(key: AssetKey) -> u128 {
-    STATE.with(|state| create_batch_impl(key, &mut state.borrow_mut()))
+    STATE.with(|state| create_batch_impl(key, &mut state.borrow_mut().runtime))
 }
 
 pub fn create_chunk(chunk: Chunk) -> Result<u128, &'static str> {
-    STATE.with(|state| create_chunk_impl(chunk, &mut state.borrow_mut()))
+    STATE.with(|state| create_chunk_impl(chunk, &mut state.borrow_mut().runtime))
 }
 
 pub fn commit_batch(commitBatch: CommitBatch) -> Result<&'static str, &'static str> {
     STATE.with(|state| commit_batch_impl(commitBatch, &mut state.borrow_mut()))
 }
 
-fn create_batch_impl(key: AssetKey, state: &mut State) -> u128 {
+fn create_batch_impl(key: AssetKey, state: &mut RuntimeState) -> u128 {
     let now = time();
 
     unsafe {
@@ -104,7 +104,7 @@ fn create_batch_impl(key: AssetKey, state: &mut State) -> u128 {
 
 fn create_chunk_impl(
     Chunk { batchId, content }: Chunk,
-    state: &mut State,
+    state: &mut RuntimeState,
 ) -> Result<u128, &'static str> {
     let batch = state.batches.get(&batchId);
 
@@ -136,7 +136,7 @@ fn commit_batch_impl(
     commitBatch: CommitBatch,
     state: &mut State,
 ) -> Result<&'static str, &'static str> {
-    let batches = state.batches.clone();
+    let batches = state.runtime.batches.clone();
     let batch = batches.get(&commitBatch.batchId);
 
     match batch {
@@ -153,14 +153,14 @@ fn commit_chunks(
     let now = time();
 
     if now > batch.expiresAt {
-        clear_expired_batches(state);
+        clear_expired_batches(&mut state.runtime);
         return Err("Batch did not complete in time. Chunks cannot be committed.");
     }
 
     let mut content_chunks: Vec<Vec<u8>> = vec!();
 
     for chunk_id in chunkIds.iter() {
-        let chunk = state.chunks.get(&chunk_id);
+        let chunk = state.runtime.chunks.get(&chunk_id);
 
         match chunk {
             None => {
@@ -188,7 +188,7 @@ fn commit_chunks(
 
     let key = batch.clone().key;
 
-    state.assets.insert(batch.clone().key.fullPath, Asset {
+    state.stable.assets.insert(batch.clone().key.fullPath, Asset {
         key,
         headers,
         encoding: AssetEncoding {
@@ -198,12 +198,12 @@ fn commit_chunks(
         },
     });
 
-    clear_batch(batchId, chunkIds, state);
+    clear_batch(batchId, chunkIds, &mut state.runtime);
 
     return Ok("Batch committed.");
 }
 
-fn clear_expired_batches(state: &mut State) {
+fn clear_expired_batches(state: &mut RuntimeState) {
     let now = time();
 
     // Remove expired batches
@@ -230,7 +230,7 @@ fn clear_expired_batches(state: &mut State) {
     }
 }
 
-fn clear_batch(batchId: u128, chunkIds: Vec<u128>, state: &mut State) {
+fn clear_batch(batchId: u128, chunkIds: Vec<u128>, state: &mut RuntimeState) {
     for chunk_id in chunkIds.iter() {
         state.chunks.remove(chunk_id);
     }
