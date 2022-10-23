@@ -147,7 +147,7 @@ fn create_token(key: AssetKey, chunk_index: usize, encoding: &AssetEncoding, hea
 #[allow(non_snake_case)]
 #[candid_method(update)]
 #[update]
-async fn initUpload(key: AssetKey) -> InitUpload {
+fn initUpload(key: AssetKey) -> InitUpload {
     // TODO: is caller === user
 
     let batchId: u128 = create_batch(key);
@@ -157,7 +157,7 @@ async fn initUpload(key: AssetKey) -> InitUpload {
 #[allow(non_snake_case)]
 #[candid_method(update)]
 #[update]
-async fn uploadChunk(chunk: Chunk) -> UploadChunk {
+fn uploadChunk(chunk: Chunk) -> UploadChunk {
     // TODO: is caller === user
 
     let result = create_chunk(chunk);
@@ -171,7 +171,7 @@ async fn uploadChunk(chunk: Chunk) -> UploadChunk {
 #[allow(non_snake_case)]
 #[candid_method(update)]
 #[update]
-async fn commitUpload(commit: CommitBatch) {
+fn commitUpload(commit: CommitBatch) {
     // TODO: is caller === user
 
     let result = commit_batch(commit);
