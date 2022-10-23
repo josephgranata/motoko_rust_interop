@@ -33,7 +33,7 @@ pub fn get_asset_for_url(url: String) -> Result<Asset, &'static str> {
     return get_asset(full_path, None);
 }
 
-fn get_asset(full_path: String, token: Option<String>) -> Result<Asset, &'static str> {
+pub fn get_asset(full_path: String, token: Option<String>) -> Result<Asset, &'static str> {
     STATE.with(|state| get_asset_impl(full_path, token, &mut state.borrow()))
 }
 

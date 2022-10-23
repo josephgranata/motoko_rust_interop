@@ -5,13 +5,13 @@ use ic_cdk::api::management_canister::main::{CanisterIdRecord, deposit_cycles};
 use ic_cdk_macros::{init, update, pre_upgrade, post_upgrade, query};
 use ic_cdk::api::{canister_balance128, caller, trap};
 use ic_cdk::export::candid::{candid_method, export_service};
-use ic_cdk::{storage, print};
+use ic_cdk::{storage, print, id};
 use candid::{Principal};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use crate::store::{commit_batch, create_batch, create_chunk, get_asset_for_url};
-use crate::types::{interface::{InitUpload, UploadChunk, CommitBatch}, storage::{AssetKey, State, Chunk, Asset}, http::{HttpRequest, HttpResponse}};
+use crate::store::{commit_batch, create_batch, create_chunk, get_asset, get_asset_for_url};
+use crate::types::{interface::{InitUpload, UploadChunk, CommitBatch}, storage::{AssetKey, State, Chunk, Asset, AssetEncoding}, http::{HttpRequest, HttpResponse, HeaderField, StreamingStrategy, StreamingCallbackToken, StreamingCallbackHttpResponse}};
 
 // https://medium.com/encode-club/encode-x-internet-computer-intro-to-building-on-the-ic-in-rust-video-slides-b496d6baad08
 // https://github.com/hpeebles/rust-canister-demo/blob/master/todo/src/lib.rs
@@ -61,28 +61,26 @@ fn post_upgrade() {
 
 #[query]
 #[candid_method(query)]
-fn http_request(HttpRequest {method, url, headers: _, body: _}: HttpRequest) -> HttpResponse {
+fn http_request(HttpRequest { method, url, headers: _, body: _ }: HttpRequest) -> HttpResponse {
     if method != "GET" {
         return HttpResponse {
             body: "Method Not Allowed.".as_bytes().to_vec(),
             headers: Vec::new(),
             status_code: 405,
-            streaming_strategy: None
-        }
+            streaming_strategy: None,
+        };
     }
 
     let result = get_asset_for_url(url);
 
-    // TODO: stream strategy
-
     match result {
-        Ok(Asset {key, headers, encoding}) => {
+        Ok(Asset { key, headers, encoding }) => {
             return HttpResponse {
                 body: encoding.contentChunks[0].clone(),
-                headers,
+                headers: headers.clone(),
                 status_code: 200,
-                streaming_strategy: None
-            }
+                streaming_strategy: streaming_strategy(key, &encoding, &headers),
+            };
         }
         Err(_) => ()
     }
@@ -91,8 +89,53 @@ fn http_request(HttpRequest {method, url, headers: _, body: _}: HttpRequest) -> 
         body: "Permission denied. Could not perform this operation.".as_bytes().to_vec(),
         headers: Vec::new(),
         status_code: 405,
-        streaming_strategy: None
+        streaming_strategy: None,
+    };
+}
+
+#[query]
+#[candid_method(query)]
+fn http_request_streaming_callback(StreamingCallbackToken { token, headers, index, sha256: _, fullPath }: StreamingCallbackToken) -> StreamingCallbackHttpResponse {
+    let result = get_asset(fullPath, token, );
+
+    match result {
+        Err(err) => trap(&*["Streamed asset not found: ", err].join("")),
+        Ok(asset) => {
+            return StreamingCallbackHttpResponse {
+                token: create_token(asset.key, index, &asset.encoding, &headers),
+                body: asset.encoding.contentChunks[index].clone()
+            }
+        }
     }
+}
+
+fn streaming_strategy(key: AssetKey, encoding: &AssetEncoding, headers: &Vec<HeaderField>) -> Option<StreamingStrategy> {
+    let streaming_token: Option<StreamingCallbackToken> = create_token(key, 0, encoding, headers);
+
+    match streaming_token {
+        None => None,
+        Some(streaming_token) => Some(StreamingStrategy::Callback {
+            callback: candid::Func {
+                method: "http_request_streaming_callback".to_string(),
+                principal: id(),
+            },
+            token: streaming_token,
+        })
+    }
+}
+
+fn create_token(key: AssetKey, chunk_index: usize, encoding: &AssetEncoding, headers: &Vec<HeaderField>) -> Option<StreamingCallbackToken> {
+    if chunk_index + 1 >= encoding.contentChunks.len() {
+        return None;
+    }
+
+    Some(StreamingCallbackToken {
+        fullPath: key.fullPath,
+        token: key.token,
+        headers: headers.clone(),
+        index: chunk_index + 1,
+        sha256: key.sha256,
+    })
 }
 
 //

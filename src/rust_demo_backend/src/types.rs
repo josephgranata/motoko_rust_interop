@@ -124,7 +124,7 @@ pub mod http {
         pub token: Option<String>,
         pub headers: Vec<HeaderField>,
         pub sha256: Option<Vec<u8>>,
-        pub index: u128,
+        pub index: usize,
     }
 
     #[derive(CandidType, Deserialize, Clone)]
