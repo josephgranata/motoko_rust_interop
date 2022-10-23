@@ -1,9 +1,6 @@
-import fetch from "node-fetch";
 import { Actor, HttpAgent } from "@dfinity/agent";
 
-import { idlFactory } from "../src/declarations/motoko_rust_interop_backend/motoko_rust_interop_backend.did.mjs";
-
-const createActor = (canisterId, options) => {
+export const createActor = ({canisterId, options, factory}) => {
     const agent = new HttpAgent(options ? { ...options.agentOptions } : {});
 
     // Fetch root key for certificate validation during development
@@ -17,24 +14,9 @@ const createActor = (canisterId, options) => {
     }
 
     // Creates an actor with using the candid interface and the HttpAgent
-    return Actor.createActor(idlFactory, {
+    return Actor.createActor(factory, {
         agent,
         canisterId,
         ...(options ? options.actorOptions : {}),
     });
 };
-
-const MAINNET = false;
-
-// Production: not deploy
-// local rrkah-fqaaa-aaaaa-aaaaq-cai
-export const canisterId = MAINNET
-    ? "UNKNOW_CANISTER_ID"
-    : "rrkah-fqaaa-aaaaa-aaaaq-cai";
-
-export const managerActor = createActor(canisterId, {
-    agentOptions: {
-        fetch,
-        host: MAINNET ? "https://ic0.app" : "http://localhost:8000",
-    },
-});

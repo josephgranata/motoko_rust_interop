@@ -3,7 +3,7 @@
 import {IDL} from '@dfinity/candid';
 import {AnonymousIdentity} from "@dfinity/agent";
 import { readFile } from "fs/promises";
-import {canisterId, managerActor} from "./actor.mjs";
+import {canisterId, managerActor} from "./manager.actor.mjs";
 
 const loadWasm = async (type) => {
   const buffer = await readFile(
