@@ -5,7 +5,7 @@ use ic_cdk::api::management_canister::main::{CanisterIdRecord, deposit_cycles};
 use ic_cdk_macros::{init, update, pre_upgrade, post_upgrade, query};
 use ic_cdk::api::{canister_balance128, caller, trap};
 use ic_cdk::export::candid::{candid_method, export_service};
-use ic_cdk::{storage, print, id};
+use ic_cdk::{storage, id};
 use candid::{Principal};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -26,7 +26,6 @@ thread_local! {
 
 #[init]
 fn init(user: Principal) {
-    print(format!("Initializing bucket., {}", user.to_text()));
     STATE.with(|state| {
         *state.borrow_mut() = State {
             stable: StableState {
