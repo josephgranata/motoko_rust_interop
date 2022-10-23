@@ -1,14 +1,14 @@
 import { readFile } from "fs/promises";
 import { bucketActor, canisterId } from "./bucket.actor.mjs";
 
-const uploadHtml = async ({ name, folder, src, fullPath }) => {
+const uploadHtml = async ({ name, folder, src, fullPath, token }) => {
   const buffer = await readFile(src);
 
   const { batchId } = await bucketActor.initUpload({
     name,
     mimeType: "text/html",
     fullPath,
-    token: [],
+    token: token ? [token] : [],
     folder,
     sha256: [],
   });
@@ -72,6 +72,7 @@ const uploadAssets = async () => {
       name: "sample_1920x1280.png",
       folder: "images",
       fullPath: "/images/sample_1920x1280.png",
+      token: "123"
     }),
   ]);
 };
