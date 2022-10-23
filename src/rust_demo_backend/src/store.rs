@@ -30,7 +30,7 @@ fn create_batch_impl(key: AssetKey, state: &mut State) -> u128 {
     let now = time();
 
     unsafe {
-        clear_expired_batches();
+        clear_expired_batches(state);
 
         NEXT_BACK_ID = NEXT_BACK_ID + 1;
 
@@ -93,7 +93,7 @@ fn commit_chunks(
     let now = time();
 
     if now > batch.expiresAt {
-        clear_expired_batches();
+        clear_expired_batches(state);
         return Err("Batch did not complete in time. Chunks cannot be committed.");
     }
 
@@ -138,21 +138,17 @@ fn commit_chunks(
         },
     });
 
-    clear_batch(batchId, chunkIds);
+    clear_batch(batchId, chunkIds, state);
 
     return Ok("Batch committed.");
 }
 
-fn clear_expired_batches() {
-    STATE.with(|state| clear_expired_batches_impl(&mut state.borrow_mut()));
-}
-
-fn clear_expired_batches_impl(state: &mut State) {
+fn clear_expired_batches(state: &mut State) {
     let now = time();
 
     // Remove expired batches
 
-    let batches = STATE.with(|state| state.borrow().batches.clone());
+    let batches = state.batches.clone();
 
     for (batch_id, batch) in batches.iter() {
         if now > batch.expiresAt {
@@ -162,7 +158,7 @@ fn clear_expired_batches_impl(state: &mut State) {
 
     // Remove chunk without existing batches (those we just deleted above)
 
-    let chunks = STATE.with(|state| state.borrow().chunks.clone());
+    let chunks = state.chunks.clone();
 
     for (chunk_id, chunk) in chunks.iter() {
         match state.batches.get(&chunk.batchId) {
@@ -174,11 +170,7 @@ fn clear_expired_batches_impl(state: &mut State) {
     }
 }
 
-fn clear_batch(batchId: u128, chunkIds: Vec<u128>) {
-    STATE.with(|state| clear_batch_impl(batchId, chunkIds, &mut state.borrow_mut()));
-}
-
-fn clear_batch_impl(batchId: u128, chunkIds: Vec<u128>, state: &mut State) {
+fn clear_batch(batchId: u128, chunkIds: Vec<u128>, state: &mut State) {
     for chunk_id in chunkIds.iter() {
         state.chunks.remove(chunk_id);
     }
